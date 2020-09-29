@@ -36,7 +36,7 @@ public class Hammer : MonoBehaviour {
         collider.enabled = false;
     }
 
-	// Update is called once per frame
+	// For future, replace Update with OnClickListener
 	void Update () {
 
         //Throw Hammer State
