@@ -1,23 +1,26 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityStandardAssets.CrossPlatformInput;
 using UnityEngine;
 
-[RequireComponent(typeof(Rigidbody))]
-
 public class Hammer : MonoBehaviour {
 
-    public GameObject hand;
-    public Collider collider;
-    public GameObject player;
+    new Collider collider;
 
-    private Quaternion originalHammerRotation;
-    private Rigidbody rb;
-    private States presentState;
-    private Vector3 throwPosition;
-    
+    [SerializeField]
+    private GameObject _hand;
+    [SerializeField]
+    private GameObject _player;
+    [SerializeField]
+    private GameObject _handHammer;
 
-    private enum States
+    private Quaternion _originalHammerRotation;
+    private Vector3 _throwPosition;
+
+    private States _presentState;
+    public States presentState => _presentState;
+   
+    public enum States
     {
         playersHand,
         hammerThrow,
@@ -27,10 +30,9 @@ public class Hammer : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
-        originalHammerRotation = transform.rotation;
-        rb = GetComponent<Rigidbody>();
-        presentState = States.playersHand;
-        rb.detectCollisions = false;
+        collider = GetComponent<BoxCollider>();
+        _originalHammerRotation = transform.rotation;
+        _presentState = States.playersHand;
         collider.enabled = false;
     }
 
@@ -40,36 +42,39 @@ public class Hammer : MonoBehaviour {
         //Throw Hammer State
         if (CrossPlatformInputManager.GetButtonDown("Range") && presentState == States.playersHand)
         {
-            presentState = States.hammerThrow;
-            throwPosition = (player.transform.forward * 30f) + new Vector3(0f, player.transform.position.y,0f);
+            this.transform.position = player.transform.position + new Vector3(0f,7f,0f);
+            _presentState = States.hammerThrow;
+            _throwPosition = (player.transform.forward * 30f) + new Vector3(0f, player.transform.position.y + 3f ,0f);
         }
         //Recall Hammer State
         if (CrossPlatformInputManager.GetButtonDown("Range") && (presentState == States.hammerThrown))
         {
-            presentState = States.hammerRecall;
+            _presentState = States.hammerRecall;
         }
 
-        switch (presentState)
+        switch (_presentState)
         {
             default:
             case States.playersHand:
-                transform.position = hand.transform.position +
-                    new Vector3(0f, 0.45f, 0f);
-                transform.rotation = Quaternion.Slerp(transform.rotation, originalHammerRotation,
-                    100f * Time.deltaTime);
+                _handHammer.transform.localScale = new Vector3(0.1f, 0.1f, 0.1f);
+                transform.localScale = new Vector3(0f, 0f, 0f);
                 break;
 
             case States.hammerThrow:
-                //collider.enabled = true;
-                //rb.detectCollisions = true;
+                collider.enabled = true;
+                _handHammer.transform.localScale = new Vector3(0f, 0f, 0f);
+                transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
                 HammerThrow();
                 break;
 
             case States.hammerThrown:
-                //Do nothing
+                _handHammer.transform.localScale = new Vector3(0f, 0f, 0f);
+                transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
                 break;
 
             case States.hammerRecall:
+                _handHammer.transform.localScale = new Vector3(0f, 0f, 0f);
+                transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
                 HammerRecall();
                 break;
         }
@@ -77,28 +82,24 @@ public class Hammer : MonoBehaviour {
 
     private void HammerThrow()
     {
-        //presentState = States.hammerThrown;
-        //rb.useGravity = true;
-        //transform.position = transform.position + (player.transform.forward)*2; 
-        //rb.AddForce(player.transform.forward * 1000f);
-        if(Vector3.Distance(transform.position, throwPosition) < 1)
+        if(Vector3.Distance(transform.position, _throwPosition) < 1)
         {
-            presentState = States.hammerThrown;
+            _presentState = States.hammerThrown;
         }
         else
         {
-            transform.position = Vector3.MoveTowards(transform.position, throwPosition, 100f * Time.deltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, _throwPosition, 100f * Time.deltaTime);
+            transform.Rotate(0f, 0f, 45f, Space.Self);
         }
     }
 
     private void HammerRecall()
     {
-        transform.position = Vector3.MoveTowards(transform.position, hand.transform.position, 100f*Time.deltaTime);
-        if (transform.position == hand.transform.position)
+        transform.position = Vector3.MoveTowards(transform.position, _hand.transform.position, 100f*Time.deltaTime);
+        if (transform.position == _hand.transform.position)
         {
-            rb.detectCollisions = false;
             collider.enabled = false;
-            presentState = States.playersHand;
+            _presentState = States.playersHand;
         }
     }
 }
